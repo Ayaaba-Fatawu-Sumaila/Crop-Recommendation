@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#123b2b">
+    <title>AgroSol | Crop recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="AgroSol home">
+            <span class="brand-mark" aria-hidden="true">F</span>
+            <span>AgroSol</span>
+        </a>
+        
+    </header>
+
+    <main class="page-shell">
+        <section class="intro">
+            <p class="eyebrow">CROP PLANNING, GROUNDED IN DATA</p>
+            <h1>Find the right crop<br><span>for your field.</span></h1>
+            <p class="intro-copy">Add your soil nutrients and local climate readings to get a crop recommendation from the trained model.</p>
+        </section>
+
+        <div class="status-banner {{ 'status-ready' if model_ready else 'status-unavailable' }}" role="status">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>{{ model_message }}</span>
+        </div>
+
+        {% if error_message %}
+        <div class="alert" role="alert">{{ error_message }}</div>
+        {% endif %}
+
+        <section class="workspace">
+            <form class="panel input-panel" action="{{ url_for('predict_crop') }}" method="post">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">FIELD DETAILS</p>
+                        <h2>Growing conditions</h2>
+                    </div>
+                    <span class="step-badge">7 inputs</span>
+                </div>
+
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="N">Nitrogen <span>N</span></label>
+                        <div class="input-wrap">
+                            <input id="N" name="N" type="number" step="any" min="0" max="140" required
+                                   value="{{ form_data.get('N', '78.5') }}" aria-describedby="N-hint N-error">
+                            <span class="unit">kg/ha</span>
+                        </div>
+                        <small id="N-hint">Range: 0–140</small>
+                        {% if field_errors.get('N') %}<small id="N-error" class="field-error">{{ field_errors.N }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="P">Phosphorus <span>P</span></label>
+                        <div class="input-wrap">
+                            <input id="P" name="P" type="number" step="any" min="5" max="145" required
+                                   value="{{ form_data.get('P', '42.3') }}" aria-describedby="P-hint P-error">
+                            <span class="unit">kg/ha</span>
+                        </div>
+                        <small id="P-hint">Range: 5–145</small>
+                        {% if field_errors.get('P') %}<small id="P-error" class="field-error">{{ field_errors.P }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="K">Potassium <span>K</span></label>
+                        <div class="input-wrap">
+                            <input id="K" name="K" type="number" step="any" min="5" max="205" required
+                                   value="{{ form_data.get('K', '53.8') }}" aria-describedby="K-hint K-error">
+                            <span class="unit">kg/ha</span>
+                        </div>
+                        <small id="K-hint">Range: 5–205</small>
+                        {% if field_errors.get('K') %}<small id="K-error" class="field-error">{{ field_errors.K }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="temperature">Temperature</label>
+                        <div class="input-wrap">
+                            <input id="temperature" name="temperature" type="number" step="any" min="8" max="44" required
+                                   value="{{ form_data.get('temperature', '25.6') }}" aria-describedby="temperature-hint temperature-error">
+                            <span class="unit">°C</span>
+                        </div>
+                        <small id="temperature-hint">Range: 8–44 °C</small>
+                        {% if field_errors.get('temperature') %}<small id="temperature-error" class="field-error">{{ field_errors.temperature }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="humidity">Humidity</label>
+                        <div class="input-wrap">
+                            <input id="humidity" name="humidity" type="number" step="any" min="14" max="99" required
+                                   value="{{ form_data.get('humidity', '82.1') }}" aria-describedby="humidity-hint humidity-error">
+                            <span class="unit">%</span>
+                        </div>
+                        <small id="humidity-hint">Range: 14–99%</small>
+                        {% if field_errors.get('humidity') %}<small id="humidity-error" class="field-error">{{ field_errors.humidity }}</small>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="ph">Soil pH</label>
+                        <div class="input-wrap">
+                            <input id="ph" name="ph" type="number" step="any" min="3.5" max="9.9" required
+                                   value="{{ form_data.get('ph', '6.7') }}" aria-describedby="ph-hint ph-error">
+                            <span class="unit">pH</span>
+                        </div>
+                        <small id="ph-hint">Range: 3.5–9.9</small>
+                        {% if field_errors.get('ph') %}<small id="ph-error" class="field-error">{{ field_errors.ph }}</small>{% endif %}
+                    </div>
+                    <div class="field field-wide">
+                        <label for="rainfall">Rainfall</label>
+                        <div class="input-wrap">
+                            <input id="rainfall" name="rainfall" type="number" step="any" min="20" max="298" required
+                                   value="{{ form_data.get('rainfall', '202.9') }}" aria-describedby="rainfall-hint rainfall-error">
+                            <span class="unit">mm</span>
+                        </div>
+                        <small id="rainfall-hint">Range: 20–298 mm</small>
+                        {% if field_errors.get('rainfall') %}<small id="rainfall-error" class="field-error">{{ field_errors.rainfall }}</small>{% endif %}
+                    </div>
+                </div>
+
+                <button class="submit-button" type="submit">
+                    <span>Get crop recommendation</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+                <p class="form-footnote"></p>
+            </form>
+
+            <aside class="panel result-panel" aria-live="polite">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">YOUR RESULT</p>
+                        <h2>Recommendation</h2>
+                    </div>
+                    <span class="result-icon" aria-hidden="true">↗</span>
+                </div>
+                {% if result %}
+                    <p class="result-kicker">TOP THREE MATCHES</p>
+                    <p class="result-description">The model's three highest class probabilities for these field conditions.</p>
+                    <div class="recommendation-list">
+                        {% for recommendation in result.recommendations %}
+                        <div class="recommendation-item">
+                            <div class="recommendation-heading">
+                                <span class="rank-badge">{{ loop.index }}</span>
+                                <span class="recommendation-crop">{{ recommendation.crop }}</span>
+                                <strong class="recommendation-percent">{{ "%.1f"|format(recommendation.probability * 100) }}%</strong>
+                            </div>
+                            <div class="confidence-track">
+                                <span class="rank-{{ loop.index }}" style="width: {{ (recommendation.probability * 100)|round(1) }}%"></span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <p class="disclaimer"></p>
+                {% else %}
+                    <div class="empty-result">
+                        <span class="empty-illustration" aria-hidden="true">✳</span>
+                        {% if model_ready %}
+                        <h3>Ready when you are</h3>
+                        <p>Your crop recommendation will appear here after you submit the field details.</p>
+                        {% else %}
+                        <h3>Model needed</h3>
+                        <p></p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </aside>
+        </section>
+
+        <section class="panel history-panel">
+            <div class="panel-heading history-heading">
+                <div>
+                    <p class="eyebrow">SAVED IN YOUR DATABASE</p>
+                    <h2>Recent recommendations</h2>
+                </div>
+                <span class="history-count">{{ history|length }} recent</span>
+            </div>
+            {% if history %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Top three crops</th><th>N · P · K</th><th>Temperature</th><th>Humidity</th><th>pH</th><th>Rainfall</th><th>Saved</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in history %}
+                        <tr>
+                            <td>
+                                <div class="history-crops">
+                                    {% for recommendation in item.top_three %}
+                                    <span class="crop-tag">{{ loop.index }}. {{ recommendation.crop }} · {{ "%.1f"|format(recommendation.probability * 100) }}%</span>
+                                    {% else %}
+                                    <span class="crop-tag">{{ item.crop }}</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>{{ item.nitrogen|round(1) }} · {{ item.phosphorus|round(1) }} · {{ item.potassium|round(1) }}</td>
+                            <td>{{ item.temperature|round(1) }} °C</td>
+                            <td>{{ item.humidity|round(1) }}%</td>
+                            <td>{{ item.ph|round(1) }}</td>
+                            <td>{{ item.rainfall|round(1) }} mm</td>
+                            <td>{{ item.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="history-empty">Your saved recommendations will show up here.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <span>AgroSol</span>
+        <span>Practical insights for healthier harvests</span>
+    </footer>
+</body>
+</html>
